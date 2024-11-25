@@ -36,8 +36,15 @@ def add_topic():
 
     return jsonify({"message": "Топик успешно добавлен"}), 201
 
-@app.route('/delete_topic', methods=['POST'])
+@app.route('/delete_topic', methods=['POST', 'OPTIONS'])
 def delete_topic():
+    if request.method == 'OPTIONS':
+        response = jsonify({'message': 'Preflight check passed'})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response, 200
+
     data = request.json
     id_topic = data.get('id_topic')
 

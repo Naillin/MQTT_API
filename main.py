@@ -7,6 +7,13 @@ app = Flask(__name__)
 # Разрешаем CORS для всех доменов
 CORS(app)
 
+@app.after_request
+def after_request(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response
+
 # Добавление нового топика
 @app.route('/add_topic', methods=['POST'])
 def add_topic():

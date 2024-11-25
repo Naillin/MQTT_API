@@ -63,7 +63,7 @@ def delete_topic():
     conn = sqlite3.connect('../MQTT_Data_collector/mqtt_data.db')
     conn.execute('PRAGMA journal_mode=WAL')
     cursor = conn.cursor()
-    cursor.execute("""DELETE FROM Topics WHERE ID_Topic = ?;""", (id_topic))
+    cursor.execute("""DELETE FROM Topics WHERE ID_Topic = ?;""", (id_topic,))  # Добавлена запятая
     conn.commit()
     conn.close()
 

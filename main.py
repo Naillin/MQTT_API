@@ -7,15 +7,24 @@ app = Flask(__name__)
 # Разрешаем CORS для всех доменов
 CORS(app)
 
-@app.after_request
-def after_request(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    return response
+# @app.before_request
+# def handle_options_request():
+#     if request.method == 'OPTIONS':
+#         response = Flask.response_class()
+#         response.headers['Access-Control-Allow-Origin'] = '*'
+#         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
+#         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+#         return response, 200
+#
+# @app.after_request
+# def after_request(response):
+#     response.headers['Access-Control-Allow-Origin'] = '*'
+#     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
+#     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+#     return response
 
 # Добавление нового топика
-@app.route('/add_topic', methods=['POST'])
+@app.route('/api//add_topic', methods=['POST'])
 def add_topic():
     data = request.json
     name_topic = data.get('name_topic')
@@ -36,14 +45,14 @@ def add_topic():
 
     return jsonify({"message": "Топик успешно добавлен"}), 201
 
-@app.route('/delete_topic', methods=['POST', 'OPTIONS'])
+@app.route('/api//delete_topic', methods=['POST'])
 def delete_topic():
-    if request.method == 'OPTIONS':
-        response = jsonify({'message': 'Preflight check passed'})
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        return response, 200
+    # if request.method == 'OPTIONS':
+    #     response = jsonify({'message': 'Preflight check passed'})
+    #     response.headers['Access-Control-Allow-Origin'] = '*'
+    #     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
+    #     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    #     return response, 200
 
     data = request.json
     id_topic = data.get('id_topic')
@@ -61,7 +70,7 @@ def delete_topic():
     return jsonify({"message": "Топик успешно удален"}), 201
 
 
-@app.route('/clear_all_tables', methods=['POST'])
+@app.route('/api//clear_all_tables', methods=['POST'])
 def clear_all_tables():
     try:
         conn = sqlite3.connect('../MQTT_Data_collector/mqtt_data.db')

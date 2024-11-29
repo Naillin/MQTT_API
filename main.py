@@ -23,8 +23,29 @@ CORS(app)
 #     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
 #     return response
 
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    login_user = data.get('login_user')
+    password_user = data.get('password_user')
+
+    if not login_user or not password_user:
+        return jsonify({"error": "Поля login_user и password_user обязательны"}), 400
+
+    conn = sqlite3.connect('../MQTT_Data_collector/mqtt_data.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM Users WHERE Login_User = ? AND Password_User = ?",
+                   (login_user, password_user))
+    user = cursor.fetchone()
+    conn.close()
+
+    if user:
+        return jsonify({"message": "Логин успешен", "user_id": user[0]}), 200
+    else:
+        return jsonify({"error": "Неверный логин или пароль"}), 401
+
 # Добавление нового топика
-@app.route('/api//add_topic', methods=['POST'])
+@app.route('/api/add_topic', methods=['POST'])
 def add_topic():
     data = request.json
     name_topic = data.get('name_topic')
@@ -38,22 +59,15 @@ def add_topic():
     conn = sqlite3.connect('../MQTT_Data_collector/mqtt_data.db')
     conn.execute('PRAGMA journal_mode=WAL')
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO Topics (Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic) VALUES (?, ?, ?, ?)",
+    cursor.execute("INSERT INTO Topics (Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic) VALUES (?, ?, ?, ?, ?)",
                    (name_topic, path_topic, latitude_topic, longitude_topic))
     conn.commit()
     conn.close()
 
     return jsonify({"message": "Топик успешно добавлен"}), 201
 
-@app.route('/api//delete_topic', methods=['POST'])
+@app.route('/api/delete_topic', methods=['POST'])
 def delete_topic():
-    # if request.method == 'OPTIONS':
-    #     response = jsonify({'message': 'Preflight check passed'})
-    #     response.headers['Access-Control-Allow-Origin'] = '*'
-    #     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
-    #     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    #     return response, 200
-
     data = request.json
     id_topic = data.get('id_topic')
 
@@ -63,14 +77,15 @@ def delete_topic():
     conn = sqlite3.connect('../MQTT_Data_collector/mqtt_data.db')
     conn.execute('PRAGMA journal_mode=WAL')
     cursor = conn.cursor()
-    cursor.execute("""DELETE FROM Topics WHERE ID_Topic = ?;""", (id_topic,))  # Добавлена запятая
+    cursor.execute("""DELETE FROM Topics WHERE ID_Topic = ?;""",
+                   (id_topic,))  # Добавлена запятая
     conn.commit()
     conn.close()
 
     return jsonify({"message": "Топик успешно удален"}), 201
 
 
-@app.route('/api//clear_all_tables', methods=['POST'])
+@app.route('/api/clear_all_tables', methods=['POST'])
 def clear_all_tables():
     try:
         conn = sqlite3.connect('../MQTT_Data_collector/mqtt_data.db')
@@ -111,7 +126,7 @@ def get_topics():
     conn.execute('PRAGMA journal_mode=WAL')
     topics = conn.execute(
         """
-        SELECT ID_Topic, Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic 
+        SELECT ID_Topic, Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic
         FROM Topics
         """
     ).fetchall()
@@ -150,7 +165,7 @@ def get_topics_with_data():
 
     # Получаем все топики
     topics = conn.execute("""
-        SELECT ID_Topic, Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic
+        SELECT ID_Topic, Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic
         FROM Topics
     """).fetchall()
 
@@ -172,6 +187,7 @@ def get_topics_with_data():
             "Path_Topic": topic['Path_Topic'],
             "Latitude_Topic": topic['Latitude_Topic'],
             "Longitude_Topic": topic['Longitude_Topic'],
+            "Altitude_Topic": topic['Altitude_Topic'],
             "Data": [{"ID_Data": d['ID_Data'], "Value_Data": d['Value_Data'], "Time_Data": d['Time_Data']} for d in data]
         }
 

@@ -52,6 +52,7 @@ def add_topic():
     path_topic = data.get('path_topic')
     latitude_topic = data.get('latitude_topic')
     longitude_topic = data.get('longitude_topic')
+    altitude_topic = data.get('altitude_topic')
 
     if not name_topic or not path_topic:
         return jsonify({"error": "Поля name_topic и path_topic обязательны"}), 400
@@ -60,7 +61,7 @@ def add_topic():
     conn.execute('PRAGMA journal_mode=WAL')
     cursor = conn.cursor()
     cursor.execute("INSERT INTO Topics (Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic) VALUES (?, ?, ?, ?, ?)",
-                   (name_topic, path_topic, latitude_topic, longitude_topic))
+                   (name_topic, path_topic, latitude_topic, longitude_topic, altitude_topic))
     conn.commit()
     conn.close()
 

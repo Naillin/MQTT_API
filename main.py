@@ -32,7 +32,8 @@ def login():
     if not login_user or not password_user:
         return jsonify({"error": "Поля login_user и password_user обязательны"}), 400
 
-    conn = sqlite3.connect('../MQTT_Data_collector/mqtt_data.db')
+    conn = sqlite3.connect(db_path)
+    conn.execute('PRAGMA journal_mode=WAL')
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM Users WHERE Login_User = ? AND Password_User = ?",
                    (login_user, password_user))
@@ -57,7 +58,7 @@ def add_topic():
     if not name_topic or not path_topic:
         return jsonify({"error": "Поля name_topic и path_topic обязательны"}), 400
 
-    conn = sqlite3.connect('../MQTT_Data_collector/mqtt_data.db')
+    conn = sqlite3.connect(db_path)
     conn.execute('PRAGMA journal_mode=WAL')
     cursor = conn.cursor()
     cursor.execute("INSERT INTO Topics (Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic) VALUES (?, ?, ?, ?, ?)",
@@ -75,7 +76,7 @@ def delete_topic():
     if not id_topic:
         return jsonify({"error": "Поле id_topic обязательно"}), 400
 
-    conn = sqlite3.connect('../MQTT_Data_collector/mqtt_data.db')
+    conn = sqlite3.connect(db_path)
     conn.execute('PRAGMA journal_mode=WAL')
     cursor = conn.cursor()
     cursor.execute("""DELETE FROM Topics WHERE ID_Topic = ?;""",
@@ -89,7 +90,7 @@ def delete_topic():
 @app.route('/api/clear_all_tables', methods=['POST'])
 def clear_all_tables():
     try:
-        conn = sqlite3.connect('../MQTT_Data_collector/mqtt_data.db')
+        conn = sqlite3.connect(db_path)
         conn.execute('PRAGMA journal_mode=WAL')
         cursor = conn.cursor()
 
@@ -116,7 +117,7 @@ def clear_all_tables():
 
 # Функция для подключения к БД
 def get_db_connection():
-    conn = sqlite3.connect('../MQTT_Data_collector/mqtt_data.db')
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row  # Позволяет работать с результатами как с dict
     return conn
 
@@ -166,18 +167,25 @@ def get_topics_with_data():
 
     # Получаем все топики
     topics = conn.execute("""
-        SELECT ID_Topic, Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic
-        FROM Topics
+        SELECT ID_Topic, Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic, CheckTime_Topic
+        FROM Topic
     """).fetchall()
 
     topics_with_data = {}
 
     for topic in topics:
-        # Для каждого топика получаем связанные данные
         topic_id = topic['ID_Topic']
+
+        # Для каждого топика получаем связанные данные
         data = conn.execute("""
             SELECT ID_Data, Value_Data, Time_Data
             FROM Data
+            WHERE ID_Topic = ?
+        """, (topic_id,)).fetchall()
+
+        area = conn.execute("""
+            SELECT Depression_AreaPoint, Perimeter_AreaPoint, Included_AreaPoint, Islands_AreaPoint
+            FROM AreaPoints
             WHERE ID_Topic = ?
         """, (topic_id,)).fetchall()
 
@@ -189,11 +197,23 @@ def get_topics_with_data():
             "Latitude_Topic": topic['Latitude_Topic'],
             "Longitude_Topic": topic['Longitude_Topic'],
             "Altitude_Topic": topic['Altitude_Topic'],
-            "Data": [{"ID_Data": d['ID_Data'], "Value_Data": d['Value_Data'], "Time_Data": d['Time_Data']} for d in data]
+            "CheckTime_Topic": topic['CheckTime_Topic'],
+            "Data": [{
+                "ID_Data": d['ID_Data'],
+                "Value_Data": d['Value_Data'],
+                "Time_Data": d['Time_Data']
+            } for d in data],
+            "Area": [{
+                "Depression_AreaPoint": a['Depression_AreaPoint'],
+                "Perimeter_AreaPoint": a['Perimeter_AreaPoint'],
+                "Included_AreaPoint": a['Included_AreaPoint'],
+                "Islands_AreaPoint": a['Islands_AreaPoint']
+            } for a in area]
         }
 
     conn.close()
     return jsonify(topics_with_data)
 
+db_path = '../MQTT_Data_collector/mqtt_data.db'
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=9515)

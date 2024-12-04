@@ -180,7 +180,7 @@ def get_topics_with_data():
     # Получаем все топики
     topics = conn.execute("""
         SELECT ID_Topic, Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic, CheckTime_Topic
-        FROM Topic
+        FROM Topics
     """).fetchall()
 
     topics_with_data = {}

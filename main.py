@@ -76,15 +76,27 @@ def delete_topic():
     if not id_topic:
         return jsonify({"error": "Поле id_topic обязательно"}), 400
 
-    conn = sqlite3.connect(db_path)
-    conn.execute('PRAGMA journal_mode=WAL')
-    cursor = conn.cursor()
-    cursor.execute("""DELETE FROM Topics WHERE ID_Topic = ?;""",
-                   (id_topic,))  # Добавлена запятая
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.execute('PRAGMA journal_mode=WAL')
+        cursor = conn.cursor()
 
-    return jsonify({"message": "Топик успешно удален"}), 201
+        # Удаление связанных записей из таблицы Data
+        cursor.execute("""DELETE FROM Data WHERE ID_Topic = ?;""", (id_topic,))
+
+        # Удаление связанных записей из таблицы AreaPoints
+        cursor.execute("""DELETE FROM AreaPoints WHERE ID_Topic = ?;""", (id_topic,))
+
+        # Удаление топика из таблицы Topics
+        cursor.execute("""DELETE FROM Topics WHERE ID_Topic = ?;""", (id_topic,))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({"message": "Топик и связанные записи успешно удалены"}), 201
+
+    except sqlite3.Error as e:
+        return jsonify({"error": f"Ошибка при удалении топика: {str(e)}"}), 500
 
 
 @app.route('/api/clear_all_tables', methods=['POST'])

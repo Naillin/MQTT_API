@@ -140,8 +140,8 @@ def get_topics():
     conn.execute('PRAGMA journal_mode=WAL')
     topics = conn.execute(
         """
-        SELECT ID_Topic, Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic
-        FROM Topics
+            SELECT ID_Topic, Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic, CheckTime_Topic
+            FROM Topics
         """
     ).fetchall()
     conn.close()
@@ -150,27 +150,41 @@ def get_topics():
 # Метод для получения данных по конкретному топику
 @app.route('/api/topic_data', methods=['GET'])
 def get_topic_data():
-    topic_id = request.args.get('topic_id')
+    # Получаем ID_Topic из параметров запроса
+    topic_id = request.args.get('id_topic')
     if not topic_id:
-        return jsonify({"error": "topic_id is required"}), 400
+        return jsonify({"error": "ID_Topic is required"}), 400
 
     conn = get_db_connection()
     conn.execute('PRAGMA journal_mode=WAL')
-    data = conn.execute(
-        """
-        SELECT Value_Data, Time_Data 
-        FROM Data 
+
+    # Получаем данные из таблицы Data для указанного топика
+    data = conn.execute("""
+        SELECT ID_Data, Value_Data, Time_Data
+        FROM Data
         WHERE ID_Topic = ?
-        ORDER BY Time_Data ASC
-        """,
-        (topic_id,)
-    ).fetchall()
+    """, (topic_id,)).fetchall()
+
+    # Получаем массив Depression_AreaPoint из таблицы AreaPoints
+    depression_points = conn.execute("""
+        SELECT Depression_AreaPoint
+        FROM AreaPoints
+        WHERE ID_Topic = ?
+    """, (topic_id,)).fetchall()
+
     conn.close()
 
-    if not data:
-        return jsonify({"error": "No data found for the topic"}), 404
+    # Формируем ответ
+    response = {
+        "Data": [{
+            "ID_Data": d['ID_Data'],
+            "Value_Data": d['Value_Data'],
+            "Time_Data": d['Time_Data']
+        } for d in data],
+        "Depression_AreaPoints": [a['Depression_AreaPoint'] for a in depression_points]
+    }
 
-    return jsonify([dict(entry) for entry in data])
+    return jsonify(response)
 
 @app.route('/api/topics_with_data', methods=['GET'])
 def get_topics_with_data():

@@ -7,21 +7,7 @@ app = Flask(__name__)
 # Разрешаем CORS для всех доменов
 CORS(app)
 
-# @app.before_request
-# def handle_options_request():
-#     if request.method == 'OPTIONS':
-#         response = Flask.response_class()
-#         response.headers['Access-Control-Allow-Origin'] = '*'
-#         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
-#         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-#         return response, 200
-#
-# @app.after_request
-# def after_request(response):
-#     response.headers['Access-Control-Allow-Origin'] = '*'
-#     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
-#     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-#     return response
+COUNT_DATA = 25
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -155,17 +141,36 @@ def get_topic_data():
     if not topic_id:
         return jsonify({"error": "ID_Topic is required"}), 400
 
+    # Получаем лимит (если передан и корректен)
+    limit = None
+    if 'limit' in request.args:
+        try:
+            limit = int(request.args.get('limit'))
+            if limit <= 0:  # Если 0 или отрицательное — игнорируем
+                limit = None
+        except ValueError:  # Если не число (например, limit=abc)
+            pass  # Оставляем limit = None
+
     conn = get_db_connection()
     conn.execute('PRAGMA journal_mode=WAL')
 
-    # Получаем данные из таблицы Data для указанного топика
-    data = conn.execute("""
+    # Основной запрос данных
+    data_query = """
         SELECT ID_Data, Value_Data, Time_Data
         FROM Data
         WHERE ID_Topic = ?
-    """, (topic_id,)).fetchall()
+        ORDER BY Time_Data DESC
+    """
+    params = (topic_id,)
 
-    # Получаем массив Depression_AreaPoint из таблицы AreaPoints
+    # Добавляем LIMIT только если указан и > 0
+    if limit is not None:
+        data_query += " LIMIT ?"
+        params += (limit,)
+
+    data = conn.execute(data_query, params).fetchall()
+
+    # Запрос Depression_AreaPoints (без изменений)
     depression_points = conn.execute("""
         SELECT Depression_AreaPoint
         FROM AreaPoints

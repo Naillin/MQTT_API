@@ -14,3 +14,6 @@ def get_or_create_secret_key(path='secret.txt'):
         with open(path, 'rb') as f:
             key = f.read()
     return key
+
+def get_path():
+    return os.path.abspath(os.path.dirname(__file__))

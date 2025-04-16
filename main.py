@@ -2,9 +2,10 @@ from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from flask_session import Session
 import sqlite3
-from tools import hash_password, get_or_create_secret_key
+from tools import hash_password, get_or_create_secret_key, get_path
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timedelta
+import os
 
 SESSION_TIME = 2
 app = Flask(__name__)
@@ -12,8 +13,10 @@ app = Flask(__name__)
 # Ключ в файле
 app.secret_key = get_or_create_secret_key()
 
+
+db_sessions_path = os.path.join(get_path(), 'api_sessions.db')
 # Подключаем SQLite (можно общий с твоими данными)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///api_sessions.db'  # путь рядом с main.py
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_sessions_path}'  # путь рядом с main.py
 app.config['SESSION_TYPE'] = 'sqlalchemy'
 app.config['SESSION_SQLALCHEMY_TABLE'] = 'sessions'  # любое имя
 app.config['SESSION_PERMANENT'] = True

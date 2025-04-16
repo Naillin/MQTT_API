@@ -19,8 +19,8 @@ db_sessions_path = os.path.join(get_path(), 'api_sessions.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_sessions_path}'  # путь рядом с main.py
 app.config['SESSION_TYPE'] = 'sqlalchemy'
 app.config['SESSION_SQLALCHEMY_TABLE'] = 'sessions'  # любое имя
-app.config['SESSION_PERMANENT'] = True
-app.permanent_session_lifetime = timedelta(hours=SESSION_TIME)
+app.config['SESSION_PERMANENT'] = False
+#app.permanent_session_lifetime = timedelta(hours=SESSION_TIME)
 
 # Настраиваем БД и сессии
 db = SQLAlchemy(app)

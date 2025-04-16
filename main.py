@@ -19,7 +19,6 @@ app.config['SESSION_SQLALCHEMY_TABLE'] = 'sessions'  # любое имя
 app.config['SESSION_PERMANENT'] = True
 app.permanent_session_lifetime = timedelta(hours=SESSION_TIME)
 
-
 # Настраиваем БД и сессии
 db = SQLAlchemy(app)
 app.config['SESSION_SQLALCHEMY'] = db
@@ -54,7 +53,7 @@ def login():
         cursor = conn.cursor()
 
         # Получаем пользователя и хеш пароля из БД
-        cursor.execute("SELECT User_ID, Password_User FROM Users WHERE Login_User = ?",
+        cursor.execute("SELECT ID_User, Password_User FROM Users WHERE Login_User = ?",
                        (login_user,))
         user = cursor.fetchone()
 

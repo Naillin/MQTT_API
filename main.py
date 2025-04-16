@@ -7,8 +7,6 @@ app = Flask(__name__)
 # Разрешаем CORS для всех доменов
 CORS(app)
 
-COUNT_DATA = 25
-
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json

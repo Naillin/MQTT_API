@@ -218,6 +218,8 @@ def get_topic_data():
         params += (limit,)
 
     data = conn.execute(data_query, params).fetchall()
+    # Разворачиваем данные (меняем порядок на возрастание времени)
+    data = data[::-1]  # Это развернет список
 
     # Запрос Depression_AreaPoints (без изменений)
     depression_points = conn.execute("""

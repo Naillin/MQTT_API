@@ -1,11 +1,42 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
+from flask_session import Session
 import sqlite3
+from tools import hash_password, get_or_create_secret_key
+from flask_sqlalchemy import SQLAlchemy
+from datetime import timedelta
 
+SESSION_TIME = 2
 app = Flask(__name__)
 
+# Ключ в файле
+app.secret_key = get_or_create_secret_key()
+
+# Подключаем SQLite (можно общий с твоими данными)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///api_sessions.db'  # путь рядом с main.py
+app.config['SESSION_TYPE'] = 'sqlalchemy'
+app.config['SESSION_SQLALCHEMY_TABLE'] = 'sessions'  # любое имя
+app.config['SESSION_PERMANENT'] = True
+app.permanent_session_lifetime = timedelta(hours=SESSION_TIME)
+
+
+# Настраиваем БД и сессии
+db = SQLAlchemy(app)
+app.config['SESSION_SQLALCHEMY'] = db
+Session(app)
+
+# Инициализируем таблицу, если её нет
+with app.app_context():
+    db.create_all()
+
 # Разрешаем CORS для всех доменов
-CORS(app)
+CORS(app, supports_credentials=True)
+
+@app.route('/api/check-auth')
+def check_auth():
+    if 'user_id' in session:
+        return jsonify({'status': 'ok', 'user_id': session['user_id']}), 200
+    return jsonify({'error': 'Unauthorized'}), 401
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -16,18 +47,36 @@ def login():
     if not login_user or not password_user:
         return jsonify({"error": "Поля login_user и password_user обязательны"}), 400
 
-    conn = sqlite3.connect(db_path)
-    conn.execute('PRAGMA journal_mode=WAL')
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM Users WHERE Login_User = ? AND Password_User = ?",
-                   (login_user, password_user))
-    user = cursor.fetchone()
-    conn.close()
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute('PRAGMA journal_mode=WAL')
+        cursor = conn.cursor()
 
-    if user:
-        return jsonify({"message": "Логин успешен", "user_id": user[0]}), 200
-    else:
-        return jsonify({"error": "Неверный логин или пароль"}), 401
+        # Получаем пользователя и хеш пароля из БД
+        cursor.execute("SELECT User_ID, Password_User FROM Users WHERE Login_User = ?",
+                       (login_user,))
+        user = cursor.fetchone()
+
+        if user and user[1] == password_user:
+            # Сохраняем ID пользователя в сессии
+            session['user_id'] = user[0]
+            return jsonify({
+                "message": "Логин успешен",
+                "user_id": user[0]
+            }), 200
+        else:
+            return jsonify({"error": "Неверный логин или пароль"}), 401
+
+    except sqlite3.Error as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/logout')
+def logout():
+    session.pop('user_id', None)
+    return jsonify({"message": "Logged out"}), 200
 
 # Добавление нового топика
 @app.route('/api/add_topic', methods=['POST'])
@@ -42,7 +91,7 @@ def add_topic():
     if not name_topic or not path_topic:
         return jsonify({"error": "Поля name_topic и path_topic обязательны"}), 400
 
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(DB_PATH)
     conn.execute('PRAGMA journal_mode=WAL')
     cursor = conn.cursor()
     cursor.execute("INSERT INTO Topics (Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic) VALUES (?, ?, ?, ?, ?)",
@@ -61,7 +110,7 @@ def delete_topic():
         return jsonify({"error": "Поле id_topic обязательно"}), 400
 
     try:
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(DB_PATH)
         conn.execute('PRAGMA journal_mode=WAL')
         cursor = conn.cursor()
 
@@ -86,7 +135,7 @@ def delete_topic():
 @app.route('/api/clear_all_tables', methods=['POST'])
 def clear_all_tables():
     try:
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(DB_PATH)
         conn.execute('PRAGMA journal_mode=WAL')
         cursor = conn.cursor()
 
@@ -113,7 +162,7 @@ def clear_all_tables():
 
 # Функция для подключения к БД
 def get_db_connection():
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row  # Позволяет работать с результатами как с dict
     return conn
 
@@ -243,6 +292,6 @@ def get_topics_with_data():
     conn.close()
     return jsonify(topics_with_data)
 
-db_path = '../MQTT_Data_collector/mqtt_data.db'
+DB_PATH = '../MQTT_Data_collector/mqtt_data.db'
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=9515)

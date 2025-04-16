@@ -37,8 +37,8 @@ CORS(app, supports_credentials=True)
 @app.route('/api/check-auth')
 def check_auth():
     if 'user_id' in session:
-        return jsonify({'status': 'ok', 'user_id': session['user_id']}), 200
-    return jsonify({'error': 'Unauthorized'}), 401
+        return '', 200  # Просто пустой 200 — достаточно
+    return '', 401  # Без JSON, просто код
 
 @app.route('/api/login', methods=['POST'])
 def login():

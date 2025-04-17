@@ -1,5 +1,7 @@
 import hashlib
 import os
+from functools import wraps
+from flask import jsonify, session
 
 def hash_password(password):
     """Хеширование пароля"""
@@ -17,3 +19,11 @@ def get_or_create_secret_key(path='secret.txt'):
 
 def get_path():
     return os.path.abspath(os.path.dirname(__file__))
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({"error": "Необходима авторизация"}), 401
+        return f(*args, **kwargs)
+    return decorated_function

@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from flask_session import Session
 import sqlite3
-from tools import hash_password, get_or_create_secret_key, get_path
+from tools import hash_password, get_or_create_secret_key, get_path, login_required
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timedelta
 import os
@@ -76,12 +76,14 @@ def login():
         conn.close()
 
 @app.route('/api/logout')
+@login_required
 def logout():
     session.pop('user_id', None)
     return jsonify({"message": "Logged out"}), 200
 
 # Добавление нового топика
 @app.route('/api/add_topic', methods=['POST'])
+@login_required
 def add_topic():
     data = request.json
     name_topic = data.get('name_topic')
@@ -104,6 +106,7 @@ def add_topic():
     return jsonify({"message": "Топик успешно добавлен"}), 201
 
 @app.route('/api/delete_topic', methods=['POST'])
+@login_required
 def delete_topic():
     data = request.json
     id_topic = data.get('id_topic')
@@ -135,6 +138,7 @@ def delete_topic():
 
 
 @app.route('/api/clear_all_tables', methods=['POST'])
+@login_required
 def clear_all_tables():
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -170,6 +174,7 @@ def get_db_connection():
 
 # Метод для получения списка топиков
 @app.route('/api/topics', methods=['GET'])
+@login_required
 def get_topics():
     conn = get_db_connection()
     conn.execute('PRAGMA journal_mode=WAL')
@@ -184,6 +189,7 @@ def get_topics():
 
 # Метод для получения данных по конкретному топику
 @app.route('/api/topic_data', methods=['GET'])
+@login_required
 def get_topic_data():
     # Получаем ID_Topic из параметров запроса
     topic_id = request.args.get('id_topic')
@@ -243,6 +249,7 @@ def get_topic_data():
     return jsonify(response)
 
 @app.route('/api/topics_with_data', methods=['GET'])
+@login_required
 def get_topics_with_data():
     conn = get_db_connection()
     conn.execute('PRAGMA journal_mode=WAL')

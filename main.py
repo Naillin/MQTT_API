@@ -99,8 +99,8 @@ def add_topic():
     conn = sqlite3.connect(DB_PATH)
     conn.execute('PRAGMA journal_mode=WAL')
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO Topics (Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic) VALUES (?, ?, ?, ?, ?)",
-                   (name_topic, path_topic, latitude_topic, longitude_topic, altitude_topic))
+    cursor.execute("INSERT INTO Topics (Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic, AltitudeSensor_Topic) VALUES (?, ?, ?, ?, ?, ?)",
+                   (name_topic, path_topic, latitude_topic, longitude_topic, altitude_topic, altitude_sensor_topic))
     conn.commit()
     conn.close()
 

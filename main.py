@@ -91,6 +91,7 @@ def add_topic():
     latitude_topic = data.get('latitude_topic')
     longitude_topic = data.get('longitude_topic')
     altitude_topic = data.get('altitude_topic')
+    altitude_sensor_topic = data.get('altitude_sensor_topic')
 
     if not name_topic or not path_topic:
         return jsonify({"error": "Поля name_topic и path_topic обязательны"}), 400
@@ -180,7 +181,7 @@ def get_topics():
     conn.execute('PRAGMA journal_mode=WAL')
     topics = conn.execute(
         """
-            SELECT ID_Topic, Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic, CheckTime_Topic
+            SELECT ID_Topic, Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic, AltitudeSensor_Topic, CheckTime_Topic
             FROM Topics
         """
     ).fetchall()
@@ -286,6 +287,7 @@ def get_topics_with_data():
             "Latitude_Topic": topic['Latitude_Topic'],
             "Longitude_Topic": topic['Longitude_Topic'],
             "Altitude_Topic": topic['Altitude_Topic'],
+            "AltitudeSensor_Topic": topic['AltitudeSensor_Topic'],
             "CheckTime_Topic": topic['CheckTime_Topic'],
             "Data": [{
                 "ID_Data": d['ID_Data'],

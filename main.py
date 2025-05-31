@@ -85,26 +85,29 @@ def logout():
 @app.route('/api/add_topic', methods=['POST'])
 @login_required
 def add_topic():
-    data = request.json
-    name_topic = data.get('name_topic')
-    path_topic = data.get('path_topic')
-    latitude_topic = data.get('latitude_topic')
-    longitude_topic = data.get('longitude_topic')
-    altitude_topic = data.get('altitude_topic')
-    altitude_sensor_topic = data.get('altitude_sensor_topic')
+    try:
+        data = request.json
+        name_topic = data.get('name_topic')
+        path_topic = data.get('path_topic')
+        latitude_topic = data.get('latitude_topic')
+        longitude_topic = data.get('longitude_topic')
+        altitude_topic = data.get('altitude_topic')
+        altitude_sensor_topic = data.get('altitude_sensor_topic')
 
-    if not name_topic or not path_topic:
-        return jsonify({"error": "Поля name_topic и path_topic обязательны"}), 400
+        if not name_topic or not path_topic:
+            return jsonify({"error": "Поля name_topic и path_topic обязательны"}), 400
 
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute('PRAGMA journal_mode=WAL')
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO Topics (Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic, AltitudeSensor_Topic) VALUES (?, ?, ?, ?, ?, ?)",
-                   (name_topic, path_topic, latitude_topic, longitude_topic, altitude_topic, altitude_sensor_topic))
-    conn.commit()
-    conn.close()
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute('PRAGMA journal_mode=WAL')
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO Topics (Name_Topic, Path_Topic, Latitude_Topic, Longitude_Topic, Altitude_Topic, AltitudeSensor_Topic) VALUES (?, ?, ?, ?, ?, ?)",
+                       (name_topic, path_topic, latitude_topic, longitude_topic, altitude_topic, altitude_sensor_topic))
+        conn.commit()
+        conn.close()
 
-    return jsonify({"message": "Топик успешно добавлен"}), 201
+        return jsonify({"message": "Топик успешно добавлен"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/delete_topic', methods=['POST'])
 @login_required

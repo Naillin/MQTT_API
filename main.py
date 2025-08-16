@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from flask_session import Session
 import sqlite3
-from tools import hash_password, get_or_create_secret_key, get_path, login_required
+from tools import hash_password, get_or_create_secret_key, get_path, login_required, validate_sql
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timedelta
 import os
@@ -307,6 +307,66 @@ def get_topics_with_data():
 
     conn.close()
     return jsonify(topics_with_data)
+
+@app.route('/api/execute-query', methods=['POST'])
+@login_required
+@validate_sql
+def execute_query():
+    try:
+        data = request.json
+        sql = data['sql']
+        params = data.get('args', [])
+
+        conn = get_db_connection()
+        conn.execute('PRAGMA journal_mode=WAL')
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Для SELECT возвращаем данные
+        if sql.strip().upper().startswith('SELECT'):
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+
+            if not rows:
+                return jsonify({"data": [], "columns": []})
+
+            columns = [description[0] for description in cursor.description]
+            result = []
+            for row in rows:
+                result.append([row[col] if row[col] is not None else None for col in columns])
+
+            conn.close()
+            return jsonify({
+                "type": "select",
+                "data": result,
+                "columns": columns,
+                "row_count": len(result)
+            })
+
+        # Для INSERT/UPDATE/DELETE возвращаем количество измененных строк
+        else:
+            cursor.execute(sql, params)
+            conn.commit()
+            row_count = cursor.rowcount
+            last_id = cursor.lastrowid
+
+            conn.close()
+            return jsonify({
+                "type": "modify",
+                "row_count": row_count,
+                "last_id": last_id
+            })
+
+    except sqlite3.Error as e:
+        return jsonify({
+            "error": "Database error",
+            "message": str(e)
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "error": "Server error",
+            "message": str(e)
+        }), 500
 
 DB_PATH = '../MQTT_Data_collector/mqtt_data.db'
 if __name__ == '__main__':

@@ -13,6 +13,8 @@ app = Flask(__name__)
 # Ключ в файле
 app.secret_key = get_or_create_secret_key()
 
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True  # Требуется для SameSite=None
 
 db_sessions_path = os.path.join(get_path(), 'api_sessions.db')
 # Подключаем SQLite (можно общий с твоими данными)
@@ -370,4 +372,8 @@ def execute_query():
 
 DB_PATH = '../MQTT_Data_collector/mqtt_data.db'
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=9515)
+    app.run(
+        host='0.0.0.0', 
+        port=9515, 
+        ssl_context=('../Serts/cert.pem', '../Serts/key.pem')
+    )

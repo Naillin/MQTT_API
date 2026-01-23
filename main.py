@@ -375,5 +375,5 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0', 
         port=9515, 
-        ssl_context=('../Serts/cert.pem', '../Serts/key.pem')
+        ssl_context=('/home/Naillin/Progs/MQTT_progs/Serts/cert.pem', '/home/Naillin/Progs/MQTT_progs/Serts/key.pem')
     )

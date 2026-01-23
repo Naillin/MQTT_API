@@ -6,6 +6,7 @@ from tools import hash_password, get_or_create_secret_key, get_path, login_requi
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timedelta
 import os
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 SESSION_TIME = 2
 app = Flask(__name__)
@@ -13,6 +14,7 @@ app = Flask(__name__)
 # Ключ в файле
 app.secret_key = get_or_create_secret_key()
 
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True  # Требуется для SameSite=None
 
